@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tic-Tac-Toe with Q-learning AI</title>
+    <style>
+        #board { display: grid; grid-template: repeat(3, 100px) / repeat(3, 100px); }
+        .cell { border: 1px solid black; display: flex; align-items: center; justify-content: center; font-size: 2em; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Tic-Tac-Toe Game</h1>
+    <div id="board"></div>
+    <script>
+        const board = Array(9).fill(null);
+        const player = "X";
+        const ai = "O";
+
+        function createBoard() {
+            const boardElement = document.getElementById("board");
+            boardElement.innerHTML = ""; // Clear the board
+
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement("div");
+                cell.className = "cell";
+                cell.id = `cell-${i}`;
+                cell.addEventListener("click", () => handlePlayerMove(i));
+                boardElement.appendChild(cell);
+            }
+        }
+
+        async function handlePlayerMove(index) {
+            if (board[index] || checkGameOver()) return;
+            playMove(index, player);
+            if (checkGameOver()) return;
+            await getAIMove();
+        }
+
+        function playMove(index, mark) {
+            board[index] = mark;
+            document.getElementById(`cell-${index}`).textContent = mark;
+        }
+
+        async function getAIMove() {
+            const response = await fetch("http://localhost/get-ai-move", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ board })
+            });
+            const data = await response.json();
+            playMove(data.action, ai);
+            checkGameOver();
+        }
+
+        function checkGameOver() {
+            const winningPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            for (const pattern of winningPatterns) {
+                const [a, b, c] = pattern;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    alert(`${board[a]} wins!`);
+                    resetBoard();
+                    return true;
+                }
+            }
+            if (board.every(cell => cell !== null)) {
+                alert("It's a tie!");
+                resetBoard();
+                return true;
+            }
+            return false;
+        }
+
+        function resetBoard() {
+            board.fill(null);
+            createBoard();
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
